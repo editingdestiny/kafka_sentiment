@@ -1,0 +1,7 @@
+kafka-python
+nltk
+SQLAlchemy
+psycopg2-binary # For PostgreSQL connectivity
+textblob # <--- NEW
+transformers # <--- NEW
+torch # <--- NEW, for Hugging Face Transformers
