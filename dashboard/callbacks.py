@@ -16,10 +16,40 @@ PLOTLY_DARK_GRID_COLOR = '#3A4B5C' # Subtle grid color
 
 def register_callbacks(app, engine):
     @app.callback(
+        [Output('vader-pie-chart', 'style'),
+         Output('textblob-pie-chart', 'style'),
+         Output('transformer-pie-chart', 'style'),
+         Output('vader-transformer-scatter', 'style'),
+         Output('textblob-transformer-scatter', 'style'),
+         Output('model-disagreement-bar', 'style'),
+         Output('vader-transformer-confusion', 'style'),
+         Output('textblob-transformer-confusion', 'style'),
+         Output('vader-accuracy', 'style'),
+         Output('vader-precision', 'style'),
+         Output('vader-recall', 'style'),
+         Output('vader-f1', 'style'),
+         Output('textblob-accuracy', 'style'),
+         Output('textblob-precision', 'style'),
+         Output('textblob-recall', 'style'),
+         Output('textblob-f1', 'style'),
+         Output('avg-vader-card', 'style'),
+         Output('avg-textblob-card', 'style'),
+         Output('avg-transformer-card', 'style')],
+        [Input('model-selector', 'value')]
+    )
+    def update_visibility(selected_model):
+        if selected_model == 'all':
+            return [{'display': 'block'}] * 19
+        else:
+            vader_style = {'display': 'block'} if selected_model == 'VADER' else {'display': 'none'}
+            textblob_style = {'display': 'block'} if selected_model == 'TextBlob' else {'display': 'none'}
+            transformer_style = {'display': 'block'} if selected_model == 'Transformer' else {'display': 'none'}
+            return [vader_style, textblob_style, transformer_style] + [{'display': 'none'}] * 16
+
+    @app.callback(
         [Output('vader-pie-chart', 'figure'),
          Output('textblob-pie-chart', 'figure'),
          Output('transformer-pie-chart', 'figure'),
-         # Removed Output('sentiment-time-series', 'figure'),
          Output('recent-articles-table', 'data'),
          Output('total-articles-card', 'children'),
          Output('avg-vader-card', 'children'),
@@ -30,7 +60,6 @@ def register_callbacks(app, engine):
          Output('model-disagreement-bar', 'figure'),
          Output('vader-transformer-confusion', 'figure'),
          Output('textblob-transformer-confusion', 'figure'),
-         # METRIC OUTPUTS
          Output('vader-accuracy', 'children'),
          Output('vader-precision', 'children'),
          Output('vader-recall', 'children'),
@@ -41,12 +70,35 @@ def register_callbacks(app, engine):
          Output('textblob-f1', 'children')],
         [Input('interval-component', 'n_intervals'),
          Input('date-range-picker', 'start_date'),
-         Input('date-range-picker', 'end_date')]
+         Input('date-range-picker', 'end_date'),
+         Input('model-selector', 'value'),
+         Input('keyword-input', 'value'),
+         Input('sentiment-filter', 'value')]
     )
-    def update_dashboard(n_intervals, start_date, end_date):
-        print(f"Updating dashboard at interval {n_intervals} with filters: {start_date}, {end_date}", flush=True)
+    def update_dashboard(n_intervals, start_date, end_date, selected_model, keyword, sentiment):
+        print(f"Updating dashboard at interval {n_intervals} with filters: {start_date}, {end_date}, model={selected_model}, keyword={keyword}, sentiment={sentiment}", flush=True)
 
         df = fetch_sentiment_data(engine, start_date, end_date)
+
+        # Keyword filter
+        if keyword and keyword.strip():
+            df = df[df['title'].str.contains(keyword, case=False, na=False) | df['description'].str.contains(keyword, case=False, na=False)]
+
+        # Sentiment filter
+        if sentiment and sentiment != 'all':
+            df = df[(df['vader_label'] == sentiment) |
+                    (df['textblob_label'] == sentiment) |
+                    (df['transformer_label'] == sentiment)]
+
+        # Model selector
+        if selected_model and selected_model != 'all':
+            df = df[[
+                'title', 'description', 'url', 'created_at',
+                f'{selected_model.lower()}_score', f'{selected_model.lower()}_label'
+            ]].rename(columns={
+                f'{selected_model.lower()}_score': 'score',
+                f'{selected_model.lower()}_label': 'label'
+            })
 
         total_articles_last_retrieval = 0
         avg_vader_last_retrieval_str = "N/A"
@@ -58,14 +110,23 @@ def register_callbacks(app, engine):
 
         if not df.empty:
             total_articles_last_retrieval = len(df)
-            
-            avg_vader_last_retrieval = df['vader_score'].mean()
-            avg_textblob_last_retrieval = df['textblob_score'].mean()
-            avg_transformer_last_retrieval = df['transformer_score'].mean()
-            
-            avg_vader_last_retrieval_str = f"{avg_vader_last_retrieval:.2f}" if pd.notna(avg_vader_last_retrieval) else "N/A"
-            avg_textblob_last_retrieval_str = f"{avg_textblob_last_retrieval:.2f}" if pd.notna(avg_textblob_last_retrieval) else "N/A"
-            avg_transformer_last_retrieval_str = f"{avg_transformer_last_retrieval:.2f}" if pd.notna(avg_transformer_last_retrieval) else "N/A"
+            if selected_model == 'all':
+                avg_vader_last_retrieval = df['vader_score'].mean()
+                avg_textblob_last_retrieval = df['textblob_score'].mean()
+                avg_transformer_last_retrieval = df['transformer_score'].mean()
+                
+                avg_vader_last_retrieval_str = f"{avg_vader_last_retrieval:.2f}" if pd.notna(avg_vader_last_retrieval) else "N/A"
+                avg_textblob_last_retrieval_str = f"{avg_textblob_last_retrieval:.2f}" if pd.notna(avg_textblob_last_retrieval) else "N/A"
+                avg_transformer_last_retrieval_str = f"{avg_transformer_last_retrieval:.2f}" if pd.notna(avg_transformer_last_retrieval) else "N/A"
+            else:
+                avg_score = df['score'].mean()
+                avg_score_str = f"{avg_score:.2f}" if pd.notna(avg_score) else "N/A"
+                if selected_model == 'VADER':
+                    avg_vader_last_retrieval_str = avg_score_str
+                elif selected_model == 'TextBlob':
+                    avg_textblob_last_retrieval_str = avg_score_str
+                elif selected_model == 'Transformer':
+                    avg_transformer_last_retrieval_str = avg_score_str
 
         vader_pie_chart_fig = {}
         textblob_pie_chart_fig = {}
@@ -80,7 +141,7 @@ def register_callbacks(app, engine):
 
         if df.empty:
             return (vader_pie_chart_fig, textblob_pie_chart_fig, transformer_pie_chart_fig,
-                    recent_articles_data, # Removed time_series_fig
+                    recent_articles_data,
                     total_articles_last_retrieval, 
                     avg_vader_last_retrieval_str, avg_textblob_last_retrieval_str, avg_transformer_last_retrieval_str,
                     vader_transformer_scatter_fig, textblob_transformer_scatter_fig, disagreement_bar_fig,
@@ -114,14 +175,14 @@ def register_callbacks(app, engine):
                 return "N/A", "N/A", "N/A", "N/A"
 
         sentiment_labels_order = ['Positive', 'Neutral', 'Negative']
+        if selected_model == 'all':
+            vader_acc, vader_prec, vader_rec, vader_f1 = calculate_metrics(
+                df['transformer_label'], df['vader_label'], sentiment_labels_order
+            )
 
-        vader_acc, vader_prec, vader_rec, vader_f1 = calculate_metrics(
-            df['transformer_label'], df['vader_label'], sentiment_labels_order
-        )
-
-        textblob_acc, textblob_prec, textblob_rec, textblob_f1 = calculate_metrics(
-            df['transformer_label'], df['textblob_label'], sentiment_labels_order
-        )
+            textblob_acc, textblob_prec, textblob_rec, textblob_f1 = calculate_metrics(
+                df['transformer_label'], df['textblob_label'], sentiment_labels_order
+            )
 
         # --- Generate Pie Charts for Each Model ---
         def create_pie_chart(dataframe, label_col, title_prefix):
@@ -142,114 +203,130 @@ def register_callbacks(app, engine):
             )
             return fig
 
-        vader_pie_chart_fig = create_pie_chart(df, 'vader_label', 'VADER')
-        textblob_pie_chart_fig = create_pie_chart(df, 'textblob_label', 'TextBlob')
-        transformer_pie_chart_fig = create_pie_chart(df, 'transformer_label', 'Transformer')
+        if selected_model == 'all':
+            vader_pie_chart_fig = create_pie_chart(df, 'vader_label', 'VADER')
+            textblob_pie_chart_fig = create_pie_chart(df, 'textblob_label', 'TextBlob')
+            transformer_pie_chart_fig = create_pie_chart(df, 'transformer_label', 'Transformer')
+        else:
+            vader_pie_chart_fig = {}
+            textblob_pie_chart_fig = {}
+            transformer_pie_chart_fig = {}
 
         # Removed all logic for sentiment_time_series chart as per request
 
-        # --- Model Score Comparison Scatter Plot ---
-        vader_transformer_scatter_fig = px.scatter(
-            df,
-            x='vader_score',
-            y='transformer_score',
-            color='vader_label',
-            hover_data=['title', 'description', 'vader_label', 'textblob_label', 'transformer_label'],
-            title='VADER Score vs. Transformer Score',
-            color_discrete_map=MILD_COLOR_MAP
-        )
-        vader_transformer_scatter_fig.update_layout(
-            plot_bgcolor=PLOTLY_DARK_BG_COLOR, paper_bgcolor=PLOTLY_DARK_BG_COLOR,
-            font_color=PLOTLY_DARK_FONT_COLOR,
-            title_font_color=PLOTLY_DARK_FONT_COLOR, xaxis_title='VADER Score', yaxis_title='Transformer Score',
-            xaxis=dict(showgrid=True, gridcolor=PLOTLY_DARK_GRID_COLOR),
-            yaxis=dict(showgrid=True, gridcolor=PLOTLY_DARK_GRID_COLOR)
-        )
-        vader_transformer_scatter_fig.update_traces(marker=dict(size=8, opacity=0.7))
-
-        # --- Model Score Comparison Scatter Plot ---
-        textblob_transformer_scatter_fig = px.scatter(
-            df,
-            x='textblob_score',
-            y='transformer_score',
-            color='textblob_label',
-            hover_data=['title', 'description', 'vader_label', 'textblob_label', 'transformer_label'],
-            title='TextBlob Score vs. Transformer Score',
-            color_discrete_map=MILD_COLOR_MAP
-        )
-        textblob_transformer_scatter_fig.update_layout(
-            plot_bgcolor=PLOTLY_DARK_BG_COLOR, paper_bgcolor=PLOTLY_DARK_BG_COLOR,
-            font_color=PLOTLY_DARK_FONT_COLOR,
-            title_font_color=PLOTLY_DARK_FONT_COLOR, xaxis_title='TextBlob Score', yaxis_title='Transformer Score',
-            xaxis=dict(showgrid=True, gridcolor=PLOTLY_DARK_GRID_COLOR),
-            yaxis=dict(showgrid=True, gridcolor=PLOTLY_DARK_GRID_COLOR)
-        )
-        textblob_transformer_scatter_fig.update_traces(marker=dict(size=8, opacity=0.7))
-
-
-        # --- Model Disagreement Bar Chart ---
-        df_disagreement = df.copy()
-        df_disagreement['agrees'] = (
-            (df_disagreement['vader_label'] == df_disagreement['textblob_label']) &
-            (df_disagreement['textblob_label'] == df_disagreement['transformer_label'])
-        )
-        
-        disagreement_counts = df_disagreement['agrees'].value_counts().reset_index()
-        disagreement_counts.columns = ['Agreement', 'Count']
-        disagreement_counts['Agreement'] = disagreement_counts['Agreement'].map({True: 'Agree', False: 'Disagree'})
-
-        disagreement_bar_fig = px.bar(
-            disagreement_counts,
-            x='Agreement',
-            y='Count',
-            title='Model Agreement/Disagreement (All Three Models)',
-            color='Agreement',
-            color_discrete_map={'Agree': MILD_COLOR_MAP['Positive'], 'Disagree': MILD_COLOR_MAP['Negative']}
-        )
-        disagreement_bar_fig.update_layout(
-            plot_bgcolor=PLOTLY_DARK_BG_COLOR, paper_bgcolor=PLOTLY_DARK_BG_COLOR,
-            font_color=PLOTLY_DARK_FONT_COLOR,
-            title_font_color=PLOTLY_DARK_FONT_COLOR, xaxis_title='', yaxis_title='Number of Articles',
-            xaxis=dict(showgrid=True, gridcolor=PLOTLY_DARK_GRID_COLOR),
-            yaxis=dict(showgrid=True, gridcolor=PLOTLY_DARK_GRID_COLOR)
-        )
-
-        # --- Confusion Matrix Generation ---
-        def create_confusion_matrix_fig(df_data, predicted_col, actual_col, title):
-            labels_order = ['Positive', 'Neutral', 'Negative']
-            
-            confusion_matrix_df = pd.crosstab(
-                df_data[predicted_col],
-                df_data[actual_col],
-                dropna=False
-            ).reindex(index=labels_order, columns=labels_order, fill_value=0)
-
-            fig = go.Figure(data=go.Heatmap(
-                z=confusion_matrix_df.values,
-                x=confusion_matrix_df.columns,
-                y=confusion_matrix_df.index,
-                colorscale="Viridis",
-                text=confusion_matrix_df.values,
-                texttemplate="%{text}",
-                textfont={"size": 14, "color": "white"}
-            ))
-
-            fig.update_layout(
-                title_text=title,
-                xaxis=dict(title=f'Actual ({actual_col.replace("_label", "").replace("transformer", "Transformer")})', showgrid=False, zeroline=False, tickfont=dict(color=PLOTLY_DARK_FONT_COLOR)),
-                yaxis=dict(title=f'Predicted ({predicted_col.replace("_label", "").replace("vader", "VADER").replace("textblob", "TextBlob")})', showgrid=False, zeroline=False, tickfont=dict(color=PLOTLY_DARK_FONT_COLOR)),
+        if selected_model == 'all':
+            # --- Model Score Comparison Scatter Plot ---
+            vader_transformer_scatter_fig = px.scatter(
+                df,
+                x='vader_score',
+                y='transformer_score',
+                color='vader_label',
+                hover_data=['title', 'description', 'vader_label', 'textblob_label', 'transformer_label'],
+                title='VADER Score vs. Transformer Score',
+                color_discrete_map=MILD_COLOR_MAP
+            )
+            vader_transformer_scatter_fig.update_layout(
                 plot_bgcolor=PLOTLY_DARK_BG_COLOR, paper_bgcolor=PLOTLY_DARK_BG_COLOR,
                 font_color=PLOTLY_DARK_FONT_COLOR,
-                title_font_color=PLOTLY_DARK_FONT_COLOR
+                title_font_color=PLOTLY_DARK_FONT_COLOR, xaxis_title='VADER Score', yaxis_title='Transformer Score',
+                xaxis=dict(showgrid=True, gridcolor=PLOTLY_DARK_GRID_COLOR),
+                yaxis=dict(showgrid=True, gridcolor=PLOTLY_DARK_GRID_COLOR)
             )
-            return fig
+            vader_transformer_scatter_fig.update_traces(marker=dict(size=8, opacity=0.7))
 
-        vader_transformer_confusion_fig = create_confusion_matrix_fig(
-            df, 'vader_label', 'transformer_label', 'VADER vs. Transformer Sentiment'
-        )
-        textblob_transformer_confusion_fig = create_confusion_matrix_fig(
-            df, 'textblob_label', 'transformer_label', 'TextBlob vs. Transformer Sentiment'
-        )
+            # --- Model Score Comparison Scatter Plot ---
+            textblob_transformer_scatter_fig = px.scatter(
+                df,
+                x='textblob_score',
+                y='transformer_score',
+                color='textblob_label',
+                hover_data=['title', 'description', 'vader_label', 'textblob_label', 'transformer_label'],
+                title='TextBlob Score vs. Transformer Score',
+                color_discrete_map=MILD_COLOR_MAP
+            )
+            textblob_transformer_scatter_fig.update_layout(
+                plot_bgcolor=PLOTLY_DARK_BG_COLOR, paper_bgcolor=PLOTLY_DARK_BG_COLOR,
+                font_color=PLOTLY_DARK_FONT_COLOR,
+                title_font_color=PLOTLY_DARK_FONT_COLOR, xaxis_title='TextBlob Score', yaxis_title='Transformer Score',
+                xaxis=dict(showgrid=True, gridcolor=PLOTLY_DARK_GRID_COLOR),
+                yaxis=dict(showgrid=True, gridcolor=PLOTLY_DARK_GRID_COLOR)
+            )
+            textblob_transformer_scatter_fig.update_traces(marker=dict(size=8, opacity=0.7))
+        else:
+            vader_transformer_scatter_fig = {}
+            textblob_transformer_scatter_fig = {}
+
+
+        if selected_model == 'all':
+            # --- Model Disagreement Bar Chart ---
+            df_disagreement = df.copy()
+            df_disagreement['agrees'] = (
+                (df_disagreement['vader_label'] == df_disagreement['textblob_label']) &
+                (df_disagreement['textblob_label'] == df_disagreement['transformer_label'])
+            )
+            
+            disagreement_counts = df_disagreement['agrees'].value_counts().reset_index()
+            disagreement_counts.columns = ['Agreement', 'Count']
+            disagreement_counts['Agreement'] = disagreement_counts['Agreement'].map({True: 'Agree', False: 'Disagree'})
+
+            disagreement_bar_fig = px.bar(
+                disagreement_counts,
+                x='Agreement',
+                y='Count',
+                title='Model Agreement/Disagreement (All Three Models)',
+                color='Agreement',
+                color_discrete_map={'Agree': MILD_COLOR_MAP['Positive'], 'Disagree': MILD_COLOR_MAP['Negative']}
+            )
+            disagreement_bar_fig.update_layout(
+                plot_bgcolor=PLOTLY_DARK_BG_COLOR, paper_bgcolor=PLOTLY_DARK_BG_COLOR,
+                font_color=PLOTLY_DARK_FONT_COLOR,
+                title_font_color=PLOTLY_DARK_FONT_COLOR, xaxis_title='', yaxis_title='Number of Articles',
+                xaxis=dict(showgrid=True, gridcolor=PLOTLY_DARK_GRID_COLOR),
+                yaxis=dict(showgrid=True, gridcolor=PLOTLY_DARK_GRID_COLOR)
+            )
+        else:
+            disagreement_bar_fig = {}
+
+        if selected_model == 'all':
+            # --- Confusion Matrix Generation ---
+            def create_confusion_matrix_fig(df_data, predicted_col, actual_col, title):
+                labels_order = ['Positive', 'Neutral', 'Negative']
+                
+                confusion_matrix_df = pd.crosstab(
+                    df_data[predicted_col],
+                    df_data[actual_col],
+                    dropna=False
+                ).reindex(index=labels_order, columns=labels_order, fill_value=0)
+
+                fig = go.Figure(data=go.Heatmap(
+                    z=confusion_matrix_df.values,
+                    x=confusion_matrix_df.columns,
+                    y=confusion_matrix_df.index,
+                    colorscale="Viridis",
+                    text=confusion_matrix_df.values,
+                    texttemplate="%{text}",
+                    textfont={"size": 14, "color": "white"}
+                ))
+
+                fig.update_layout(
+                    title_text=title,
+                    xaxis=dict(title=f'Actual ({actual_col.replace("_label", "").replace("transformer", "Transformer")})', showgrid=False, zeroline=False, tickfont=dict(color=PLOTLY_DARK_FONT_COLOR)),
+                    yaxis=dict(title=f'Predicted ({predicted_col.replace("_label", "").replace("vader", "VADER").replace("textblob", "TextBlob")})', showgrid=False, zeroline=False, tickfont=dict(color=PLOTLY_DARK_FONT_COLOR)),
+                    plot_bgcolor=PLOTLY_DARK_BG_COLOR, paper_bgcolor=PLOTLY_DARK_BG_COLOR,
+                    font_color=PLOTLY_DARK_FONT_COLOR,
+                    title_font_color=PLOTLY_DARK_FONT_COLOR
+                )
+                return fig
+
+            vader_transformer_confusion_fig = create_confusion_matrix_fig(
+                df, 'vader_label', 'transformer_label', 'VADER vs. Transformer Sentiment'
+            )
+            textblob_transformer_confusion_fig = create_confusion_matrix_fig(
+                df, 'textblob_label', 'transformer_label', 'TextBlob vs. Transformer Sentiment'
+            )
+        else:
+            vader_transformer_confusion_fig = {}
+            textblob_transformer_confusion_fig = {}
 
         # --- Recent Articles Table Data ---
         df['created_at'] = df['created_at'].dt.strftime('%Y-%m-%d %H:%M:%S')
@@ -258,7 +335,7 @@ def register_callbacks(app, engine):
         recent_articles_data = df.to_dict('records')
 
         return (vader_pie_chart_fig, textblob_pie_chart_fig, transformer_pie_chart_fig,
-                recent_articles_data, # time_series_fig is removed from here
+                recent_articles_data,
                 total_articles_last_retrieval, 
                 avg_vader_last_retrieval_str, avg_textblob_last_retrieval_str, avg_transformer_last_retrieval_str,
                 vader_transformer_scatter_fig, textblob_transformer_scatter_fig, disagreement_bar_fig,
