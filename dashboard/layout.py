@@ -10,6 +10,41 @@ from constants import MILD_COLOR_MAP, MODEL_COLOR_MAP # No leading dot
 # Remove any legacy 'layout' assignment in app.py.
 
 def create_layout():
+    card_style_summary = {
+        'background': 'linear-gradient(135deg, #232526 0%, #6dd5ed 100%)',
+        'boxShadow': '0 4px 24px 0 rgba(0,0,0,0.25)',
+        'borderRadius': '18px',
+        'padding': '18px 8px',
+        'border': '1px solid #343A40',
+        'transition': 'transform 0.15s, box-shadow 0.15s',
+    }
+    card_style_vader = {
+        'background': 'linear-gradient(135deg, #232526 0%, #ff512f 100%)',
+        'boxShadow': '0 4px 24px 0 rgba(0,0,0,0.25)',
+        'borderRadius': '18px',
+        'padding': '18px 8px',
+        'border': '1px solid #343A40',
+        'transition': 'transform 0.15s, box-shadow 0.15s',
+    }
+    card_style_textblob = {
+        'background': 'linear-gradient(135deg, #232526 0%, #36d1c4 100%)',
+        'boxShadow': '0 4px 24px 0 rgba(0,0,0,0.25)',
+        'borderRadius': '18px',
+        'padding': '18px 8px',
+        'border': '1px solid #343A40',
+        'transition': 'transform 0.15s, box-shadow 0.15s',
+    }
+    card_style_transformer = {
+        'background': 'linear-gradient(135deg, #232526 0%, #8e54e9 100%)',
+        'boxShadow': '0 4px 24px 0 rgba(0,0,0,0.25)',
+        'borderRadius': '18px',
+        'padding': '18px 8px',
+        'border': '1px solid #343A40',
+        'transition': 'transform 0.15s, box-shadow 0.15s',
+    }
+    card_body_style = {
+        'padding': '0',
+    }
     return dbc.Container(
         fluid=True,
         style={'backgroundColor': '#212529', 'color': '#ECF0F1', 'fontFamily': 'Inter, sans-serif'},
@@ -69,92 +104,140 @@ def create_layout():
             # Cards Row
             dbc.Row([
                 dbc.Col(
-                    dbc.Card(dbc.CardBody([
-                        html.H5("Total Articles (Last Retrieval)", className="card-title text-center"),
-                        html.H2(id='total-articles-card', className="text-center")
-                    ]), color="dark", outline=True),
+                    dbc.Card(
+                        dbc.CardBody([
+                            html.H5("Total Articles (Last Retrieval)", className="card-title text-center"),
+                            html.H2(id='total-articles-card', className="text-center")
+                        ], style=card_body_style),
+                        style=card_style_summary,
+                        className="dashboard-card",
+                        color="dark", outline=True),
                     md=3
                 ),
                 dbc.Col(
-                    dbc.Card(dbc.CardBody([
-                        html.H5("Avg. VADER Score (Last Retrieval)", className="card-title text-center"),
-                        html.H2(id='avg-vader-card', className="text-center", style={'color': MODEL_COLOR_MAP['VADER']})
-                    ]), color="dark", outline=True),
+                    dbc.Card(
+                        dbc.CardBody([
+                            html.H5("Avg. VADER Score (Last Retrieval)", className="card-title text-center"),
+                            html.H2(id='avg-vader-card', className="text-center", style={'color': MODEL_COLOR_MAP['VADER']})
+                        ], style=card_body_style),
+                        style=card_style_vader,
+                        className="dashboard-card",
+                        color="dark", outline=True),
                     md=3
                 ),
                 dbc.Col(
-                    dbc.Card(dbc.CardBody([
-                        html.H5("Avg. TextBlob Score (Last Retrieval)", className="card-title text-center"),
-                        html.H2(id='avg-textblob-card', className="text-center", style={'color': MODEL_COLOR_MAP['TextBlob']})
-                    ]), color="dark", outline=True),
+                    dbc.Card(
+                        dbc.CardBody([
+                            html.H5("Avg. TextBlob Score (Last Retrieval)", className="card-title text-center"),
+                            html.H2(id='avg-textblob-card', className="text-center", style={'color': MODEL_COLOR_MAP['TextBlob']})
+                        ], style=card_body_style),
+                        style=card_style_textblob,
+                        className="dashboard-card",
+                        color="dark", outline=True),
                     md=3
                 ),
                 dbc.Col(
-                    dbc.Card(dbc.CardBody([
-                        html.H5("Avg. Transformer Score (Last Retrieval)", className="card-title text-center"),
-                        html.H2(id='avg-transformer-card', className="text-center", style={'color': MODEL_COLOR_MAP['Transformer']})
-                    ]), color="dark", outline=True),
+                    dbc.Card(
+                        dbc.CardBody([
+                            html.H5("Avg. Transformer Score (Last Retrieval)", className="card-title text-center"),
+                            html.H2(id='avg-transformer-card', className="text-center", style={'color': MODEL_COLOR_MAP['Transformer']})
+                        ], style=card_body_style),
+                        style=card_style_transformer,
+                        className="dashboard-card",
+                        color="dark", outline=True),
                     md=3
                 ),
             ]),
             # Classification Metrics
             dbc.Row([
                 dbc.Col(
-                    dbc.Card(dbc.CardBody([
-                        html.H5("VADER Accuracy", className="card-title text-center"),
-                        html.H2(id='vader-accuracy', className="text-center", style={'color': MODEL_COLOR_MAP['VADER']})
-                    ]), color="dark", outline=True),
+                    dbc.Card(
+                        dbc.CardBody([
+                            html.H5("VADER Accuracy", className="card-title text-center"),
+                            html.H2(id='vader-accuracy', className="text-center", style={'color': MODEL_COLOR_MAP['VADER']})
+                        ], style=card_body_style),
+                        style=card_style_vader,
+                        className="dashboard-card",
+                        color="dark", outline=True),
                     md=3
                 ),
                 dbc.Col(
-                    dbc.Card(dbc.CardBody([
-                        html.H5("VADER Precision", className="card-title text-center"),
-                        html.H2(id='vader-precision', className="text-center", style={'color': MODEL_COLOR_MAP['VADER']})
-                    ]), color="dark", outline=True),
+                    dbc.Card(
+                        dbc.CardBody([
+                            html.H5("VADER Precision", className="card-title text-center"),
+                            html.H2(id='vader-precision', className="text-center", style={'color': MODEL_COLOR_MAP['VADER']})
+                        ], style=card_body_style),
+                        style=card_style_vader,
+                        className="dashboard-card",
+                        color="dark", outline=True),
                     md=3
                 ),
                 dbc.Col(
-                    dbc.Card(dbc.CardBody([
-                        html.H5("VADER Recall", className="card-title text-center"),
-                        html.H2(id='vader-recall', className="text-center", style={'color': MODEL_COLOR_MAP['VADER']})
-                    ]), color="dark", outline=True),
+                    dbc.Card(
+                        dbc.CardBody([
+                            html.H5("VADER Recall", className="card-title text-center"),
+                            html.H2(id='vader-recall', className="text-center", style={'color': MODEL_COLOR_MAP['VADER']})
+                        ], style=card_body_style),
+                        style=card_style_vader,
+                        className="dashboard-card",
+                        color="dark", outline=True),
                     md=3
                 ),
                 dbc.Col(
-                    dbc.Card(dbc.CardBody([
-                        html.H5("VADER F1-Score", className="card-title text-center"),
-                        html.H2(id='vader-f1', className="text-center", style={'color': MODEL_COLOR_MAP['VADER']})
-                    ]), color="dark", outline=True),
+                    dbc.Card(
+                        dbc.CardBody([
+                            html.H5("VADER F1-Score", className="card-title text-center"),
+                            html.H2(id='vader-f1', className="text-center", style={'color': MODEL_COLOR_MAP['VADER']})
+                        ], style=card_body_style),
+                        style=card_style_vader,
+                        className="dashboard-card",
+                        color="dark", outline=True),
                     md=3
                 ),
             ], className='mb-4'),
             dbc.Row([
                 dbc.Col(
-                    dbc.Card(dbc.CardBody([
-                        html.H5("TextBlob Accuracy", className="card-title text-center"),
-                        html.H2(id='textblob-accuracy', className="text-center", style={'color': MODEL_COLOR_MAP['TextBlob']})
-                    ]), color="dark", outline=True),
+                    dbc.Card(
+                        dbc.CardBody([
+                            html.H5("TextBlob Accuracy", className="card-title text-center"),
+                            html.H2(id='textblob-accuracy', className="text-center", style={'color': MODEL_COLOR_MAP['TextBlob']})
+                        ], style=card_body_style),
+                        style=card_style_textblob,
+                        className="dashboard-card",
+                        color="dark", outline=True),
                     md=3
                 ),
                 dbc.Col(
-                    dbc.Card(dbc.CardBody([
-                        html.H5("TextBlob Precision", className="card-title text-center"),
-                        html.H2(id='textblob-precision', className="text-center", style={'color': MODEL_COLOR_MAP['TextBlob']})
-                    ]), color="dark", outline=True),
+                    dbc.Card(
+                        dbc.CardBody([
+                            html.H5("TextBlob Precision", className="card-title text-center"),
+                            html.H2(id='textblob-precision', className="text-center", style={'color': MODEL_COLOR_MAP['TextBlob']})
+                        ], style=card_body_style),
+                        style=card_style_textblob,
+                        className="dashboard-card",
+                        color="dark", outline=True),
                     md=3
                 ),
                 dbc.Col(
-                    dbc.Card(dbc.CardBody([
-                        html.H5("TextBlob Recall", className="card-title text-center"),
-                        html.H2(id='textblob-recall', className="text-center", style={'color': MODEL_COLOR_MAP['TextBlob']})
-                    ]), color="dark", outline=True),
+                    dbc.Card(
+                        dbc.CardBody([
+                            html.H5("TextBlob Recall", className="card-title text-center"),
+                            html.H2(id='textblob-recall', className="text-center", style={'color': MODEL_COLOR_MAP['TextBlob']})
+                        ], style=card_body_style),
+                        style=card_style_textblob,
+                        className="dashboard-card",
+                        color="dark", outline=True),
                     md=3
                 ),
                 dbc.Col(
-                    dbc.Card(dbc.CardBody([
-                        html.H5("TextBlob F1-Score", className="card-title text-center"),
-                        html.H2(id='textblob-f1', className="text-center", style={'color': MODEL_COLOR_MAP['TextBlob']})
-                    ]), color="dark", outline=True),
+                    dbc.Card(
+                        dbc.CardBody([
+                            html.H5("TextBlob F1-Score", className="card-title text-center"),
+                            html.H2(id='textblob-f1', className="text-center", style={'color': MODEL_COLOR_MAP['TextBlob']})
+                        ], style=card_body_style),
+                        style=card_style_textblob,
+                        className="dashboard-card",
+                        color="dark", outline=True),
                     md=3
                 ),
             ], className='mb-4'),
@@ -294,7 +377,14 @@ def create_layout():
                         ]
                     )
                 ])
-            ]),
+            ],
+            colors={
+                "border": "#888",
+                "primary": "#ECF0F1",
+                "background": "#212529"
+            },
+            parent_className="custom-tabs-container"
+            ),
             html.Div(id='filtered-data-store', style={'display': 'none'}),
             dcc.Interval(
                 id='interval-component',

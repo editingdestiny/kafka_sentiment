@@ -91,14 +91,17 @@ def register_callbacks(app, engine):
                     (df['transformer_label'] == sentiment)]
 
         # Model selector
+        # Use the full df for all calculations, but filter for the data table only:
         if selected_model and selected_model != 'all':
-            df = df[[
-                'title', 'description', 'url', 'created_at',
-                f'{selected_model.lower()}_score', f'{selected_model.lower()}_label'
-            ]].rename(columns={
+            table_columns = ['title', 'description', 'url', 'created_at',
+                             f'{selected_model.lower()}_score', f'{selected_model.lower()}_label']
+            table_df = df[table_columns].rename(columns={
                 f'{selected_model.lower()}_score': 'score',
                 f'{selected_model.lower()}_label': 'label'
             })
+            # Use table_df for the data table only
+        else:
+            table_df = df
 
         total_articles_last_retrieval = 0
         avg_vader_last_retrieval_str = "N/A"
